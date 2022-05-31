@@ -12,9 +12,14 @@ const cacheSchema = new mongoose.Schema(
     val: {
       type: String || Number,
       required: true,
+      default:
+        Math.random().toString(36).substring(2, 10) +
+        Math.random().toString(36).substring(2, 10),
     },
 
-    valid_till: { type: Date, expires: '15s', default: Date.now },
+    ttl: { type: Number, required: true, default: 1 }, //1 minute,
+
+    isValid: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
