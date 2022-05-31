@@ -67,3 +67,28 @@ exports.createOrUpdate = async (req, res) => {
     });
   }
 };
+
+exports.removeByKey = async (req, res) => {
+  try {
+    let key = req.params.key;
+    await Cache.findOneAndRemove({ key }).exec();
+    res.status(200).json({ success: 1, key });
+  } catch (error) {
+    res.status(400).json({
+      success: 0,
+      error: error.message,
+    });
+  }
+};
+
+exports.removeAll = async (req, res) => {
+  try {
+    await Cache.remove({}).exec();
+    res.status(200).json({ success: 1 });
+  } catch (error) {
+    res.status(400).json({
+      success: 0,
+      error: error.message,
+    });
+  }
+};
