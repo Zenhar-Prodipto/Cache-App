@@ -2,7 +2,8 @@ const { getRandomString } = require('../helpers');
 const cache = require('../models/cache');
 const Cache = require('../models/cache');
 let moment = require('moment');
-var count = 0;
+let count = 0;
+let cache_limit = 100;
 exports.getAll = async (req, res) => {
   try {
     const cache = await Cache.find({}).exec();
@@ -33,12 +34,15 @@ exports.getOne = async (req, res) => {
       }
     } else {
       console.log('Cache Miss !!');
-      if (count > 5) {
-        await Cache.findOneAndDelete({});
-      }
+
       let value = getRandomString();
       const newCache = new Cache({ key: key, val: value });
       const data = await newCache.save();
+      if (count > cache_limit) {
+        // Delete the oldest data when the limit is exceeded
+        let caches = await Cache.find({}).sort('createdAt').exec();
+        await Cache.findOneAndRemove({ key: caches[0].key }).exec();
+      }
       count++;
 
       res.status(201).json({ success: 1, data });
@@ -64,10 +68,14 @@ exports.createOrUpdate = async (req, res) => {
       new: true,
       setDefaultsOnInsert: true,
     });
-    count++;
-    if (count > 5) {
-      await Cache.findOneAndDelete({});
+
+    if (count > cache_limit) {
+      // Delete the oldest data when the limit is exceeded
+      let caches = await Cache.find({}).sort('createdAt').exec();
+      await Cache.findOneAndRemove({ key: caches[0].key }).exec();
     }
+
+    count++;
 
     res.status(201).json({ success: 1, data: newCache });
   } catch (error) {

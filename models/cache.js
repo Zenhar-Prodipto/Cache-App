@@ -17,7 +17,7 @@ const cacheSchema = new mongoose.Schema(
         Math.random().toString(36).substring(2, 10),
     },
 
-    ttl: { type: Number, required: true, default: 1 }, //1 minute,
+    ttl: { type: Number, required: true, default: 30 }, //30 minutes,
 
     isValid: { type: Boolean, default: true },
   },
