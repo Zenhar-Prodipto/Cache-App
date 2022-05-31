@@ -2,7 +2,7 @@ const { getRandomString } = require('../helpers');
 const cache = require('../models/cache');
 const Cache = require('../models/cache');
 let moment = require('moment');
-
+var count = 0;
 exports.getAll = async (req, res) => {
   try {
     const cache = await Cache.find({}).exec();
@@ -21,12 +21,11 @@ exports.getOne = async (req, res) => {
     let key = req.params.key;
     const cache = await Cache.findOne({ key: key }).exec();
     if (cache) {
-      // let expiryTime = Date.parse(cache.createdAt) + cache.ttl * 1000;
-      let expiryTime = moment(cache.createdAt).add(cache.ttl, 'm').toDate();
-      if (expiryTime > Date.now()) {
+      let expiryTime = moment(cache.createdAt).add(cache.ttl, 'm');
+      if (expiryTime.isBefore(moment())) {
+        cache.isValid = false;
+        await cache.save();
         console.log('No Time To Live');
-        // cache.isValid = false;
-        // cache.save().exec();
         res.status(410).json({ message: 'Not valid Anymore' });
       } else {
         console.log('Cache Hit!!!');
@@ -34,9 +33,14 @@ exports.getOne = async (req, res) => {
       }
     } else {
       console.log('Cache Miss !!');
+      if (count > 5) {
+        await Cache.findOneAndDelete({});
+      }
       let value = getRandomString();
       const newCache = new Cache({ key: key, val: value });
       const data = await newCache.save();
+      count++;
+
       res.status(201).json({ success: 1, data });
     }
   } catch (error) {
@@ -54,11 +58,17 @@ exports.createOrUpdate = async (req, res) => {
       key: key,
       val: req.body.value,
     };
+
     let newCache = await Cache.findOneAndUpdate({ key: key }, body, {
       upsert: true,
       new: true,
       setDefaultsOnInsert: true,
     });
+    count++;
+    if (count > 5) {
+      await Cache.findOneAndDelete({});
+    }
+
     res.status(201).json({ success: 1, data: newCache });
   } catch (error) {
     res.status(400).json({
