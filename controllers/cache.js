@@ -46,3 +46,24 @@ exports.getOne = async (req, res) => {
     });
   }
 };
+
+exports.createOrUpdate = async (req, res) => {
+  try {
+    let key = req.params.key;
+    let body = {
+      key: key,
+      val: req.body.value,
+    };
+    let newCache = await Cache.findOneAndUpdate({ key: key }, body, {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true,
+    });
+    res.status(201).json({ success: 1, data: newCache });
+  } catch (error) {
+    res.status(400).json({
+      success: 0,
+      error: error.message,
+    });
+  }
+};
